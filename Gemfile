@@ -65,11 +65,19 @@ gem "sidekiq"
 # Elasticsearch with chewy [https://github.com/toptal/chewy]
 gem "chewy"
 
+# Omniauth strategy for Strava [https://github.com/thogg4/omniauth-strava]
+gem "omniauth-strava"
+
+# Strava API V3 [https://github.com/dblock/strava-ruby-client]
+gem "strava-ruby-client"
+
 group :development, :test do
   gem "bullet"
 
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[mri mingw x64_mingw]
+  # A Ruby gem to load environment variables from `.env` [https://github.com/bkeepers/dotenv]
+  gem "dotenv-rails"
   gem "factory_bot_rails"
 end
 
