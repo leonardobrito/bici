@@ -11,6 +11,11 @@
   </head>
 
   <body>
+    <% if user_signed_in? %>
+      <%= button_to "Logout", destroy_user_session_path, method: :delete, data: { turbo: false }  %>
+    <% else %>
+      <%= button_to "Sign in with Strava", user_strava_omniauth_authorize_path, data: { turbo: false } %>
+    <% end %>
     <%= yield %>
   </body>
 </html>
