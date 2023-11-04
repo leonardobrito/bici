@@ -263,7 +263,7 @@ Devise.setup do |config|
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
   config.omniauth :strava, ENV.fetch("STRAVA_CLIENT_ID", nil).to_i, ENV.fetch("STRAVA_CLIENT_SECRET", nil),
-    scope: ENV.fetch("STRAVA_SCOPE"),
+    scope: ENV.fetch("STRAVA_SCOPE", nil),
     token_params: {
       client_id: ENV.fetch("STRAVA_CLIENT_ID", nil),
       client_secret: ENV.fetch("STRAVA_CLIENT_SECRET", nil)
