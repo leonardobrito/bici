@@ -8,9 +8,10 @@ module User
 
     def find_or_create_by_oauth(oauth:)
       ::User::Record.find_or_create_by(oauth_provider: oauth.provider, oauth_uid: oauth.uid) do |user|
-        user.email = oauth.info.email
+        user_info = oauth.info
+        user.email = user_info.email
         user.password = Devise.friendly_token[0, 20]
-        user.name = oauth.info.name
+        user.name = user_info.name
       end.then(&AsReadonly)
     end
 

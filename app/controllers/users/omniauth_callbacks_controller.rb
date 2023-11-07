@@ -9,7 +9,7 @@ module Users
 
       persisted, user = ::User::Authenticate::ByOmniauthStrava.new(oauth: oauth).call
 
-      persisted ? authenticate!(user) : redirect_to_registration
+      persisted ? authenticate(user) : redirect_to_registration
     end
 
     def failure
@@ -19,7 +19,7 @@ module Users
 
     private
 
-    def authenticate!(user)
+    def authenticate(user)
       session[:access_token] = credentials_token
       sign_in_and_redirect user, event: :authentication
       set_flash_message(:notice, :success, kind: "strava") if is_navigational_format?
