@@ -121,6 +121,10 @@ GEM
       warden (~> 1.2.3)
     diff-lcs (1.5.0)
     docile (1.4.0)
+    dotenv (2.8.1)
+    dotenv-rails (2.8.1)
+      dotenv (= 2.8.1)
+      railties (>= 3.2)
     dry-configurable (1.1.0)
       dry-core (~> 1.0, < 2)
       zeitwerk (~> 2.6)
@@ -181,8 +185,11 @@ GEM
     faraday-patron (1.0.0)
     faraday-rack (1.0.0)
     faraday-retry (1.0.3)
+    faraday_middleware (1.2.0)
+      faraday (~> 1.0)
     globalid (1.2.1)
       activesupport (>= 6.1)
+    hashie (5.0.0)
     i18n (1.14.1)
       concurrent-ruby (~> 1.0)
     importmap-rails (1.2.1)
@@ -198,6 +205,7 @@ GEM
     json (2.6.3)
     json-schema (3.0.0)
       addressable (>= 2.8)
+    jwt (2.7.1)
     kwalify (0.7.2)
     language_server-protocol (3.17.0.3)
     loofah (2.21.3)
@@ -216,6 +224,7 @@ GEM
     minitest (5.20.0)
     msgpack (1.7.2)
     multi_json (1.15.0)
+    multi_xml (0.6.0)
     multipart-post (2.3.0)
     net-imap (0.3.7)
       date
@@ -234,6 +243,22 @@ GEM
       racc (~> 1.4)
     nokogiri (1.15.4-x86_64-linux)
       racc (~> 1.4)
+    oauth2 (2.0.9)
+      faraday (>= 0.17.3, < 3.0)
+      jwt (>= 1.0, < 3.0)
+      multi_xml (~> 0.5)
+      rack (>= 1.2, < 4)
+      snaky_hash (~> 2.0)
+      version_gem (~> 1.1)
+    omniauth (1.9.2)
+      hashie (>= 3.4.6)
+      rack (>= 1.6.2, < 3)
+    omniauth-oauth2 (1.7.3)
+      oauth2 (>= 1.4, < 3)
+      omniauth (>= 1.9, < 3)
+    omniauth-strava (0.0.6)
+      omniauth (~> 1.0)
+      omniauth-oauth2 (~> 1.0)
     orm_adapter (0.5.0)
     parallel (1.23.0)
     parser (3.2.2.3)
@@ -384,6 +409,9 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
+    snaky_hash (2.0.1)
+      hashie
+      version_gem (~> 1.1, >= 1.1.1)
     spring (4.1.1)
     spring-commands-rspec (1.0.4)
       spring (>= 0.9.1)
@@ -396,6 +424,11 @@ GEM
       sprockets (>= 3.0.0)
     stimulus-rails (1.2.2)
       railties (>= 6.0.0)
+    strava-ruby-client (0.4.3)
+      activesupport
+      faraday (>= 1.0.0)
+      faraday_middleware
+      hashie
     stringio (3.0.8)
     thor (1.2.2)
     timeout (0.4.0)
@@ -407,6 +440,7 @@ GEM
       concurrent-ruby (~> 1.0)
     unicode-display_width (2.4.2)
     uniform_notifier (1.16.0)
+    version_gem (1.1.3)
     warden (1.2.9)
       rack (>= 2.0.9)
     web-console (4.2.1)
@@ -436,9 +470,11 @@ DEPENDENCIES
   debug
   devise (~> 4.9)
   devise-api!
+  dotenv-rails
   factory_bot_rails
   importmap-rails
   jbuilder
+  omniauth-strava
   pg
   pry (~> 0.14.2)
   puma (~> 5.0)
@@ -460,6 +496,7 @@ DEPENDENCIES
   spring-commands-rspec
   sprockets-rails
   stimulus-rails
+  strava-ruby-client
   turbo-rails
   tzinfo-data
   web-console

@@ -262,7 +262,12 @@ Devise.setup do |config|
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
-
+  config.omniauth :strava, ENV.fetch("STRAVA_CLIENT_ID", nil).to_i, ENV.fetch("STRAVA_CLIENT_SECRET", nil),
+    scope: ENV.fetch("STRAVA_SCOPE", nil),
+    token_params: {
+      client_id: ENV.fetch("STRAVA_CLIENT_ID", nil),
+      client_secret: ENV.fetch("STRAVA_CLIENT_SECRET", nil)
+    }
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
   # change the failure app, you can configure them inside the config.warden block.

@@ -8,6 +8,9 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# Load dotenv only in development or test environment
+Dotenv::Railtie.load if %w[development test].include? ENV["RAILS_ENV"]
+
 module App
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -20,6 +23,7 @@ module App
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    config.autoload_paths << Rails.root.join("app/services")
     config.generators do |generator|
       generator.test_framework :rspec
     end

@@ -10,6 +10,6 @@ class UsersIndex < Chewy::Index
     }
   }
 
-  index_scope User
+  index_scope User::Record
   field :email, analyzer: "email"
 end
