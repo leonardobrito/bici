@@ -3,20 +3,46 @@
 module Users
   class OmniauthCallbacksController < Devise::OmniauthCallbacksController
     def strava
-      @user = User.from_omniauth(request.env["omniauth.auth"])
-      session[:access_token] = request.env["omniauth.auth"].credentials.token
+      unless ::User::Authenticate::ValidOmniauthProvider.new(oauth_provider: oauth.provider).call
+        redirect_to_registration
+      end
 
-      if @user.persisted?
-        sign_in_and_redirect @user, event: :authentication # this will throw if @user is not activated
-        set_flash_message(:notice, :success, kind: "strava") if is_navigational_format?
+      persisted, user = ::User::Authenticate::ByOmniauthStrava.new(oauth: oauth).call
+
+      if persisted
+        authenticate!(user)
       else
-        redirect_to new_user_registration_url
+        redirect_to_registration
       end
     end
 
     def failure
-      flash[:error] = "Error logging in #{request.env['omniauth.error']}"
+      flash[:error] = "Error logging in #{omniauth_error}"
       redirect_to root_path
+    end
+
+    private
+
+    def authenticate!(user)
+      session[:access_token] = credentials_token
+      sign_in_and_redirect user, event: :authentication
+      set_flash_message(:notice, :success, kind: "strava") if is_navigational_format?
+    end
+
+    def redirect_to_registration
+      redirect_to new_user_registration_url
+    end
+
+    def credentials_token
+      oauth.credentials.token
+    end
+
+    def oauth
+      request.env["omniauth.auth"]
+    end
+
+    def omniauth_error
+      request.env["omniauth.error"]
     end
   end
 end
