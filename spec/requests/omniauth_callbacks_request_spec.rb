@@ -8,24 +8,27 @@ RSpec.describe "/users/auth/:provider", type: :system do
 
     let(:callback_params) do
       {
-        "provider" => "strava",
-        "uid" => "1234",
-        "info" => {
-          "name" => "Athlete Name"
-        },
         credentials: {
           token: "token"
-        }
+        },
+        info: {
+          name: "Athlete Name"
+        },
+        provider: "strava",
+        uid: "1234"
       }
     end
 
     before do
-      mock_omni_auth(:strava, OmniAuth::AuthHash.new(callback_params))
+      config = OmniAuth.config
+      allow(config).to receive(:test_mode).and_return true
+      allow(config.mock_auth)
+        .to receive(:[]).with(:strava).and_return(OmniAuth::AuthHash.new(callback_params))
     end
 
     context "when user does not exists" do
       it "creates user" do
-        expect { do_request }.to(change(User, :count).by(1))
+        expect { do_request }.to(change(User::Record, :count).by(1))
       end
 
       it "redirects to root page" do
@@ -38,7 +41,7 @@ RSpec.describe "/users/auth/:provider", type: :system do
       before { create(:user, email: "user@company.com", oauth_provider: "strava", oauth_uid: "1234") }
 
       it "does not create user" do
-        expect { do_request }.not_to(change(User, :count))
+        expect { do_request }.not_to(change(User::Record, :count))
       end
 
       it "redirects to root page" do
