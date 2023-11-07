@@ -9,11 +9,7 @@ module Users
 
       persisted, user = ::User::Authenticate::ByOmniauthStrava.new(oauth: oauth).call
 
-      if persisted
-        authenticate!(user)
-      else
-        redirect_to_registration
-      end
+      persisted ? authenticate!(user) : redirect_to_registration
     end
 
     def failure
