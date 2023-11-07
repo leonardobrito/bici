@@ -9,7 +9,7 @@ RSpec.describe User::Authenticate::ByOmniauthStrava do
   let(:provider) { "strava" }
   let(:uid) { "1234" }
 
-  let!(:oauth_data) { OmniAuth::AuthHash.new(info:, provider:, uid:) }
+  let(:oauth_data) { OmniAuth::AuthHash.new(info:, provider:, uid:) }
 
   it "creates a new user" do
     expect { authenticate }.to change(User::Record, :count).by(1)

@@ -14,7 +14,7 @@ module User
       end.then(&AsReadonly)
     end
 
-    def find_user_by_oauth_uid(oauth_uid)
+    def find_user_by_oauth_uid(oauth_uid:)
       find_user_by(oauth_uid: oauth_uid)
     end
 
