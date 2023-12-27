@@ -1,5 +1,10 @@
 version: "3"
 
+networks:
+  backend:
+  frontend:
+  selenium:
+
 x-app: &app
   build:
     context: .
@@ -24,6 +29,8 @@ x-backend: &backend
     POSTGRES_PASSWORD: postgres
     POSTGRES_HOST: database
     ELASTICSEARCH_HOST: http://elasticsearch:9200
+    HUB_URL: http://chrome:4444/wd/hub
+    CHROME_HEADLESS_MODE: false
   volumes:
       - .:/app
       - backend_data:/usr/local/bundle
@@ -32,6 +39,12 @@ x-backend: &backend
       condition: service_healthy
     redis:
       condition: service_healthy
+    chrome:
+      condition: service_started
+    elasticsearch:
+      condition: service_started
+  networks:
+    - backend
 
 services:
   database:
@@ -46,6 +59,8 @@ services:
     healthcheck:
       test: pg_isready -U postgres -h 127.0.0.1
       interval: 5s
+    networks:
+      - backend
   elasticsearch:
     image: elasticsearch:8.10.2
     environment:
@@ -63,16 +78,35 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
+    networks:
+      - backend
+  chrome:
+    image: seleniarm/standalone-chromium
+    container_name: chrome
+    volumes:
+      - /dev/shm:/dev/shm
+    ports:
+      - "4444:4444"
+    networks:
+      - selenium
+    environment:
+      - START_XVFB=false
+    logging:
+      driver: none
+    shm_size: 2G
+
   web:
     <<: *backend
     hostname: web-app-container
     ports:
       - "3000:3000"
     depends_on:
-      elasticsearch:
-        condition: service_started
       sidekiq:
         condition: service_started
+    networks:
+      - backend
+      - frontend
+      - selenium
   sidekiq:
     <<: *backend
     hostname: sidekiq-app-container
