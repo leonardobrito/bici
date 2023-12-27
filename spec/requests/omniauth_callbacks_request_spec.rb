@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "/users/auth/:provider", type: :system do
+RSpec.describe "/users/auth/:provider" do
   describe "/users/auth/strava/callback" do
     subject(:do_request) { get user_strava_omniauth_callback_path }
 
