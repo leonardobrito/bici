@@ -3,7 +3,6 @@ version: "3"
 networks:
   backend:
   frontend:
-  selenium:
 
 x-app: &app
   build:
@@ -29,8 +28,8 @@ x-backend: &backend
     POSTGRES_PASSWORD: postgres
     POSTGRES_HOST: database
     ELASTICSEARCH_HOST: http://elasticsearch:9200
-    HUB_URL: http://chrome:4444/wd/hub
-    CHROME_HEADLESS_MODE: false
+    CHROME_URL: http://chrome:3333
+    DOCKER: true
   volumes:
       - .:/app
       - backend_data:/usr/local/bundle
@@ -39,10 +38,13 @@ x-backend: &backend
       condition: service_healthy
     redis:
       condition: service_healthy
-    chrome:
-      condition: service_started
     elasticsearch:
       condition: service_started
+    chrome:
+      condition: service_started
+  links:
+    - redis
+    - elasticsearch
   networks:
     - backend
 
@@ -76,25 +78,31 @@ services:
         hard: -1
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+      - .conf/elastic/synonyms:/usr/share/elasticsearch/config/synonyms
     ports:
       - 9200:9200
+      - 9300:9300
     networks:
       - backend
   chrome:
-    image: seleniarm/standalone-chromium
-    container_name: chrome
-    volumes:
-      - /dev/shm:/dev/shm
+    # Currently, Apple M1 is only supported in unnumbered "latest" versions.
+    # See https://github.com/browserless/chrome/issues/1393
+    image: browserless/chrome:latest
     ports:
-      - "4444:4444"
-    networks:
-      - selenium
+      - "3333:3333"
+    # Mount application source code to support file uploading
+    # (otherwise Chrome won't be able to find files).
+    # NOTE: Make sure you use absolute paths in `#attach_file`.
+    volumes:
+      - .:/app:cached
     environment:
-      - START_XVFB=false
-    logging:
-      driver: none
-    shm_size: 2G
-
+      # By default, it uses 3000, which is typically used by Rails.
+      PORT: 3333
+      # Set connection timeout to avoid timeout exception during debugging
+      # https://docs.browserless.io/docs/docker.html#connection-timeout
+      CONNECTION_TIMEOUT: 600000
+    networks:
+      - backend
   web:
     <<: *backend
     hostname: web-app-container
@@ -106,7 +114,6 @@ services:
     networks:
       - backend
       - frontend
-      - selenium
   sidekiq:
     <<: *backend
     hostname: sidekiq-app-container
@@ -114,7 +121,9 @@ services:
   redis:
     image: docker.io/redis:latest
     hostname: redis
-    command: redis-server
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - .conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
     healthcheck:

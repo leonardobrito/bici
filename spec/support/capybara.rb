@@ -1,93 +1,89 @@
-# without lines 1-12, screenshots and html captured from failing specs are blank
-# source: https://github.com/mattheworiordan/capybara-screenshot/issues/225
-# require "action_dispatch/system_testing/test_helpers/setup_and_teardown"
-# ActionDispatch::SystemTesting::TestHelpers::SetupAndTeardown.module_eval do
-#   def before_setup
-#     super
-#   end
+# frozen_string_literal: true
 
-#   def after_teardown
-#     super
-#   end
-# end
-
+require "capybara/cuprite"
 require "capybara/rspec"
 require "capybara/rails"
 require "capybara-screenshot/rspec"
-require "selenium-webdriver"
 
-Capybara.save_path = ENV["CI"] ? "/tmp/test-results" : Rails.root.join("tmp/capybara")
+# Use a hostname that could be resolved in the internal Docker network
+Capybara.app_host = "http://#{ENV.fetch('APP_HOST', `hostname`.strip&.downcase || '0.0.0.0')}"
+# Make server accessible from the outside world
+Capybara.server_host = "0.0.0.0"
+Capybara.default_max_wait_time = 2
+Capybara.default_normalize_ws = true
+Capybara.disable_animation = true
+Capybara.save_path = ENV.fetch("CAPYBARA_ARTIFACTS", "./tmp/capybara")
+Capybara.default_driver = :rack_test
+Capybara.javascript_driver = :cuprite
 
-options = Selenium::WebDriver::Chrome::Options.new.tap do |opts|
-  opts.add_argument("--headless") if ENV["CHROME_HEADLESS_MODE"]
-  opts.add_argument("--disable-gpu") if Gem.win_platform?
-  # Workaround https://bugs.chromium.org/p/chromedriver/issues/detail?id=2650&q=load&sort=-id&colspec=ID%20Status%20Pri%20Owner%20Summary
-  opts.add_argument("--disable-site-isolation-trials")
-  opts.add_argument("--window-size=1440,1440")
-  opts.add_argument("--enable-features=NetworkService,NetworkServiceInProcess")
-  opts.add_argument("--disable-features=VizDisplayCompositor")
-end
-
-Capybara.register_driver :selenium_chrome_headless_sandboxless do |app|
-  driver = Capybara::Selenium::Driver.new(
-    app,
-    browser: :remote,
-    capabilities: options,
-    url: ENV.fetch("HUB_URL", nil)
-  )
-
-  # Fix for capybara vs remote files. Selenium handles this for us
-  driver.browser.file_detector = lambda do |args|
-    str = args.first.to_s
-    str if File.exist?(str)
+# Parse URL
+# NOTE: REMOTE_CHROME_HOST should be added to Webmock/VCR allowlist if you use any of those.
+REMOTE_CHROME_URL = ENV.fetch("CHROME_URL", nil)
+REMOTE_CHROME_HOST, REMOTE_CHROME_PORT =
+  if REMOTE_CHROME_URL
+    URI.parse(REMOTE_CHROME_URL).then do |uri|
+      [uri.host, uri.port]
+    end
   end
 
-  driver
+# Check whether the remote chrome is running.
+remote_chrome =
+  begin
+    if REMOTE_CHROME_URL.nil?
+      false
+    else
+      Socket.tcp(REMOTE_CHROME_HOST, REMOTE_CHROME_PORT, connect_timeout: 1).close
+      true
+    end
+  rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
+    false
+  end
+
+remote_options = remote_chrome ? { url: REMOTE_CHROME_URL } : {}
+
+options = {
+  js_errors: true,
+  headless: %w[0 false].exclude?(ENV.fetch("HEADLESS", nil)),
+  slowmo: ENV["SLOWMO"]&.to_f,
+  process_timeout: 15,
+  timeout: 10,
+  inspector: true,
+  browser_options: ENV["DOCKER"] ? { "no-sandbox" => nil } : {}
+}.merge(remote_options)
+
+RSpec.configure do |config|
+  config.before(:each, type: :system) do
+    driven_by :rack_test # rack_test by default, for performance
+  end
+
+  config.before(:each, js: true, type: :system) do
+    driven_by(Capybara.javascript_driver, screen_size: [1440, 810], options:)
+  end
+
+  config.prepend_before(:each, type: :system) do
+    driven_by(Capybara.javascript_driver, screen_size: [1440, 810], options:)
+  end
+
+  config.filter_gems_from_backtrace("capybara", "cuprite", "ferrum")
 end
 
-# Capybara.server_host = "0.0.0.0"
-# Capybara.server_port = 3000
+module CupriteHelpers
+  # Drop #pause anywhere in a test to stop the execution.
+  # Useful when you want to checkout the contents of a web page in the middle of a test
+  # running in a headful mode.
+  def pause
+    page.driver.pause
+  end
 
-ip = IPSocket.getaddress(Socket.gethostname)
-Capybara.app_host = "http://#{ip}:#{Capybara.server_port}"
+  # Drop #debug anywhere in a test to open a Chrome inspector and pause the execution
+  def debug(binding = nil)
+    $stdout.puts "🔎 Open Chrome inspector at http://localhost:3333"
+    return binding.break if binding
 
-# Capybara.default_driver = :rack_test # This is a faster driver
-Capybara.javascript_driver = :selenium_chrome_headless_sandboxless # This is slower
-Capybara.disable_animation = true
-# Capybara.default_max_wait_time = ENV.fetch("CAPYBARA_WAIT_TIME", 10) # We may have a slow application, let's give it some time.
+    page.driver.pause
+  end
+end
 
-# Capybara::Screenshot.register_driver(:selenium_chrome_headless_sandboxless) do |driver, path|
-#   driver.browser.save_screenshot(path)
-# end
-
-# Capybara::Screenshot.autosave_on_failure = true
-# Capybara::Screenshot.prune_strategy = :keep_last_run
-
-# Save CircleCI artifacts
-
-# def save_timestamped_page_and_screenshot(page, meta)
-#   filename = File.basename(meta[:file_path])
-#   line_number = meta[:line_number]
-
-#   time_now = Time.zone.now
-#   timestamp = "#{time_now.strftime('%Y-%m-%d-%H-%M-%S.')}#{'%03d' % (time_now.usec / 1000).to_i}"
-
-#   artifact_dir = Capybara.save_path
-
-#   screenshot_name = "screenshot-#{filename}-#{line_number}-#{timestamp}.png"
-#   screenshot_path = "#{artifact_dir}/#{screenshot_name}"
-#   page.save_screenshot(screenshot_path)
-
-#   page_name = "html-#{filename}-#{line_number}-#{timestamp}.html"
-#   page_path = "#{artifact_dir}/#{page_name}"
-#   page.save_page(page_path)
-
-#   puts "\n  Screenshot: #{screenshot_path}"
-#   puts "  HTML: #{page_path}"
-# end
-
-# RSpec.configure do |config|
-#   config.after(:each, :js) do |example|
-#     save_timestamped_page_and_screenshot(Capybara.page, example.metadata) if example.exception
-#   end
-# end
+RSpec.configure do |config|
+  config.include CupriteHelpers, type: :system
+end

@@ -12,7 +12,7 @@ class HelloWorldController < ApplicationController
   end
 
   def search
-    query = search_params[:query]
+    query = search_params[:query] || ""
     @users = UsersIndex.query(query_string: { fields: [:email], query: query, default_operator: "and" })
     render json: @users.objects.to_json, status: :ok
   end
